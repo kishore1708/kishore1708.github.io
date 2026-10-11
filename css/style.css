@@ -340,40 +340,53 @@ em { font-style: normal; color: var(--yellow); }
 
 .hero__socials { display: flex; gap: 12px; margin-top: 44px; }
 
-/* Portrait */
+/* Portrait — cut-out photo over a yellow brush stroke (layers stacked bottom → top) */
 .hero__visual { display: flex; justify-content: center; }
 .portrait {
   position: relative;
-  width: min(460px, 100%);
+  width: min(500px, 100%);
   aspect-ratio: 1 / 1;
 }
-/* All portrait layers are centred on the same point */
-.portrait__circle, .portrait__img, .portrait__fallback {
-  position: absolute; left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  aspect-ratio: 1; border-radius: 50%;
+/* Motion, three layers:
+   1. entrance — the stroke paints in, then the photo rises into place
+   2. float    — after that, photo and stroke drift gently in opposite directions
+   3. parallax — on desktop, layers shift with the mouse (--mx / --my set in js/main.js, section 7) */
+.portrait__layer {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  transition: transform .8s var(--ease);
 }
-.portrait__circle {
-  width: 90%;
-  background: radial-gradient(circle at 32% 28%, #F2D27A 0%, var(--yellow) 55%, #CFA235 100%);
-  box-shadow: 0 50px 90px -40px rgba(180, 135, 20, .65);
-}
+.portrait__layer--brush { transform: translate3d(calc(var(--mx, 0) * -14px), calc(var(--my, 0) * -10px), 0); }
+.portrait__layer--photo { transform: translate3d(calc(var(--mx, 0) *   6px), calc(var(--my, 0) *   4px), 0); }
 
+.portrait__brush {
+  position: absolute; left: -12%; top: 4%;
+  width: 124%; max-width: none; height: auto;
+  filter: drop-shadow(0 26px 34px rgba(180, 135, 20, .22));
+  animation: brush-in 1.2s .35s var(--ease) both,
+             float-brush 7s 2.2s ease-in-out infinite;
+}
+/* paints the stroke left → right; negative insets leave room for the drop-shadow so it isn't boxed in */
+@keyframes brush-in { from { clip-path: inset(-25% 100% -25% -25%); } to { clip-path: inset(-25% -25% -25% -25%); } }
+@keyframes float-brush { 50% { transform: translate3d(4px, 5px, 0) rotate(.6deg); } }
 
 .portrait__img {
-  /* photo is clipped to a circle, sitting inside the yellow circle like a frame */
-  width: 77%; height: auto;
-  object-fit: cover; object-position: 50% 22%;
-  filter: grayscale(1) contrast(1.1) brightness(1.04);   /* black & white */
-  box-shadow: 0 30px 60px -25px rgba(0,0,0,.55);
-  border: 6px solid var(--surface-2);
-  transition: transform .6s var(--ease);
+  position: absolute; left: 6%; bottom: 0;   /* centred: (100% - 88%) / 2 */
+  width: 88%; height: auto;
+  filter: grayscale(1) contrast(1.12) brightness(1.03);  /* black & white */
+  /* soften the cut at the bottom so the shoulders fade out */
+  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+          mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+  animation: photo-in 1s 1.05s var(--ease) both,
+             float-photo 6s 2.2s ease-in-out infinite;
 }
-.portrait:hover .portrait__img { transform: translate(-50%, -50%) scale(1.02); }
-/* Fallback when profile.png is missing */
+@keyframes photo-in { from { opacity: 0; transform: translate3d(0, 24px, 0); } to { opacity: 1; transform: none; } }
+@keyframes float-photo { 50% { transform: translate3d(0, -7px, 0); } }
+
+/* Fallback when the photo is missing */
 .portrait__fallback {
   display: none;
-  width: 90%;
+  position: absolute; inset: 0;
   place-items: center;
   font-size: clamp(5rem, 14vw, 9rem); font-weight: 800; letter-spacing: -.05em; color: var(--ink);
 }
@@ -829,7 +842,7 @@ em { font-style: normal; color: var(--yellow); }
   .hero { padding-top: calc(var(--nav-h) + 30px); }
   .hero__inner { grid-template-columns: 1fr; gap: 56px; text-align: left; }
   .hero__visual { order: -1; }
-  .portrait { width: min(360px, 82vw); }
+  .portrait { width: min(380px, 86vw); }
 
   .about__grid { grid-template-columns: 1fr; }
   .about__card { padding: 36px 30px; }
@@ -884,7 +897,7 @@ em { font-style: normal; color: var(--yellow); }
   html { scroll-behavior: auto; }
   .glow, .pill-badge__dot, .scroll-cue span,
   .net-link, .net-node, .net-hub-pulse, .wa-fab::before,
-  .pc-shape, .pc-shape::before, .pc-shape span { animation: none !important; }
+  .pc-shape, .pc-shape::before, .pc-shape span, .portrait__brush, .portrait__img { animation: none !important; }
   .reveal, .skill, .project-card, .pc-info > * { transition-duration: .01s !important; transition-delay: 0s !important; }
   /* Note: the carousel progress bar keeps its animation — it is the 10s auto-advance timer */
 }

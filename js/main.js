@@ -7,6 +7,7 @@
      4. Skills (entrance + spotlight)
      5. Projects carousel (auto every 10s + arrows + dots + swipe)
      6. Book-a-call form
+     7. Hero portrait parallax (desktop mouse only)
    ========================================================================== */
 
 document.documentElement.classList.remove('no-js');
@@ -402,4 +403,31 @@ const AUTO_ADVANCE_MS = 10000; // keep in sync with the 10s `progress` animation
     input.addEventListener('input', () => { if (input.closest('.field').classList.contains('is-invalid')) check(input); });
     input.addEventListener('blur', () => { if (input.value.trim()) check(input); });
   });
+})();
+
+/* ---------- 7. Hero portrait parallax ---------- */
+// Sets --mx / --my (-1…1) on the portrait from the mouse position over the hero;
+// CSS turns them into small opposite shifts of the brush and photo layers.
+(function initPortraitParallax() {
+  const hero = document.querySelector('.hero');
+  const portrait = document.getElementById('portrait');
+  if (!hero || !portrait) return;
+  if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;   // skip touch devices
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  let frame = null, mx = 0, my = 0;
+  const apply = () => {
+    portrait.style.setProperty('--mx', mx.toFixed(3));
+    portrait.style.setProperty('--my', my.toFixed(3));
+    frame = null;
+  };
+  const queue = () => { if (!frame) frame = requestAnimationFrame(apply); };
+
+  hero.addEventListener('mousemove', (e) => {
+    const r = hero.getBoundingClientRect();
+    mx = ((e.clientX - r.left) / r.width) * 2 - 1;
+    my = ((e.clientY - r.top) / r.height) * 2 - 1;
+    queue();
+  });
+  hero.addEventListener('mouseleave', () => { mx = 0; my = 0; queue(); });
 })();

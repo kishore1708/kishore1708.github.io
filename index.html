@@ -149,13 +149,20 @@
           </div>
         </div>
 
-        <!-- Portrait: yellow circle + black & white photo -->
+        <!-- Portrait: black & white cut-out photo over a yellow brush stroke -->
         <div class="hero__visual reveal" style="--d:.2s">
           <div class="portrait" id="portrait">
-            <span class="portrait__circle" aria-hidden="true"></span>
-            <!-- Drop your photo at assets/images/profile.png — it is shown in black & white automatically -->
-            <img class="portrait__img" src="assets/images/profile.png" alt="Portrait of Kishore V"
-                 onerror="this.closest('.portrait').classList.add('no-photo')" />
+            <!-- Each layer: outer span = mouse parallax (JS), inner img = entrance + float (CSS) -->
+            <!-- yellow dry-brush stroke (transparent PNG) -->
+            <span class="portrait__layer portrait__layer--brush" aria-hidden="true">
+              <img class="portrait__brush" src="assets/images/brush-stroke.png" alt="" width="1100" height="694" />
+            </span>
+            <!-- Background-free photo (made from profile.png); shown in black & white via CSS -->
+            <span class="portrait__layer portrait__layer--photo">
+              <img class="portrait__img" src="assets/images/profile-cutout.png" alt="Portrait of Kishore V"
+                   width="900" height="837"
+                   onerror="this.closest('.portrait').classList.add('no-photo')" />
+            </span>
             <span class="portrait__fallback" aria-hidden="true">KV</span>
           </div>
         </div>
