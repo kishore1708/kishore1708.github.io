@@ -2,7 +2,7 @@
    Kishore V — Portfolio scripts
    Sections:
      1. Config (WhatsApp number, form endpoint, PROJECTS data)
-     2. Navigation (scroll state, mobile menu, active link)
+     2. Navigation (scroll state, mobile menu, active link, theme toggle)
      3. Scroll reveal
      4. Skills (entrance + spotlight)
      5. Projects carousel (auto every 10s + arrows + dots + swipe)
@@ -16,12 +16,14 @@ document.documentElement.classList.remove('no-js');
 const WHATSAPP_NUMBER = '919952944283';
 
 /*
- * Form delivery. GitHub Pages has no backend, so:
- *  - Paste a form-service URL here (e.g. Formspree: "https://formspree.io/f/xxxxxxx")
- *    and submissions will be sent there.
- *  - Leave it empty and the form opens WhatsApp with the details pre-filled.
+ * Book-a-call delivery. GitHub Pages has no backend, so submissions go through
+ * FormSubmit (https://formsubmit.co), which emails them to the address below.
+ * The very first submission triggers a one-time "Activate Form" email to this inbox —
+ * click it once and every later submission arrives as a normal email.
+ * Tip: after activating, FormSubmit gives you a random alias; paste it in place of the
+ * email address to keep the address out of the page source.
  */
-const FORM_ENDPOINT = '';
+const FORM_EMAIL_ENDPOINT = 'https://formsubmit.co/ajax/kishore1708@gmail.com';
 
 /*
  * PROJECTS — edit this list to add real projects.
@@ -78,6 +80,27 @@ const AUTO_ADVANCE_MS = 10000; // keep in sync with the 10s `progress` animation
   sections.forEach((s) => spy.observe(s));
 
   document.getElementById('year').textContent = new Date().getFullYear();
+})();
+
+/* Light / dark toggle — the initial theme is set by the inline script in <head> */
+(function initThemeToggle() {
+  const btn = document.getElementById('themeToggle');
+  const root = document.documentElement;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (!btn) return;
+
+  const apply = (theme) => {
+    root.setAttribute('data-theme', theme);
+    btn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#121212' : '#E9E9E6');
+  };
+  apply(root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+
+  btn.addEventListener('click', () => {
+    const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    apply(next);
+    try { localStorage.setItem('theme', next); } catch (e) { /* storage blocked — theme still switches */ }
+  });
 })();
 
 /* ---------- 3. Scroll reveal ---------- */
@@ -272,57 +295,111 @@ const AUTO_ADVANCE_MS = 10000; // keep in sync with the 10s `progress` animation
   const status = document.getElementById('formStatus');
   if (!form) return;
 
-  const setStatus = (msg) => { status.textContent = msg; };
+  const button = form.querySelector('.form__submit');
+  const buttonText = form.querySelector('.form__submit-text');
+
+  // One rule per field: returns an error message, or '' when the value is fine
+  const RULES = {
+    name: (v) => (!v ? 'Please enter your name.' : ''),
+    phone: (v) => (!v ? 'Please enter your phone number.'
+      : !/^\d+$/.test(v) ? 'Phone number can contain digits only.'
+      : v.length !== 10 ? `Phone number must be exactly 10 digits (you entered ${v.length}).` : ''),
+    email: (v) => (!v ? 'Please enter your email address.' : emailError(v)),
+    requirement: (v) => (!v ? 'Please share your requirement in brief.' : ''),
+  };
+
+  // Proper email check: one @, valid local part, real-looking domain and TLD
+  function emailError(v) {
+    if (/\s/.test(v)) return 'Email address cannot contain spaces.';
+    const parts = v.split('@');
+    if (parts.length !== 2) return 'Email address must contain a single "@" (e.g. name@company.com).';
+    const [local, domain] = parts;
+    if (!local) return 'Please enter the part before "@" (e.g. name@company.com).';
+    if (!domain) return 'Please enter the domain after "@" (e.g. name@company.com).';
+    if (!/^[A-Za-z0-9._%+-]+$/.test(local) || /^\.|\.$|\.\./.test(local)) return 'The part before "@" contains invalid characters.';
+    if (!/^([A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/.test(domain)) return 'Please enter a valid domain (e.g. gmail.com or company.com).';
+    return '';
+  }
+
+  const setStatus = (msg, isError = false) => {
+    status.innerHTML = msg;
+    status.classList.toggle('is-error', isError);
+  };
+
+  // Validate one input; show / clear its message. Returns true when valid.
+  function check(input) {
+    const msg = RULES[input.name](input.value.trim());
+    const field = input.closest('.field');
+    field.classList.toggle('is-invalid', !!msg);
+    field.querySelector('.field__error').textContent = msg;
+    input.setAttribute('aria-invalid', String(!!msg));
+    return !msg;
+  }
+
+  const inputs = Object.keys(RULES).map((name) => form.elements[name]);
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    setStatus('');
 
-    // Simple validation
-    const fields = [...form.querySelectorAll('input, textarea')];
-    let valid = true;
-    fields.forEach((f) => {
-      const ok = f.value.trim().length > 0 && (f.name !== 'phone' || /^[+\d][\d\s()-]{6,}$/.test(f.value.trim()));
-      f.closest('.field').classList.toggle('is-invalid', !ok);
-      if (!ok) valid = false;
-    });
-    if (!valid) { setStatus('Please fill in all fields with a valid phone number.'); return; }
-
-    const data = Object.fromEntries(new FormData(form));
-    const button = form.querySelector('.form__submit');
-
-    // A) Send to a form service if one is configured
-    if (FORM_ENDPOINT) {
-      button.disabled = true;
-      setStatus('Sending…');
-      try {
-        const res = await fetch(FORM_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(data),
-        });
-        if (!res.ok) throw new Error(res.statusText);
-        form.reset();
-        setStatus('Thanks! Your request has been sent. I\'ll be in touch soon.');
-      } catch (err) {
-        setStatus('Something went wrong. Please message me on WhatsApp instead.');
-      } finally {
-        button.disabled = false;
-      }
+    const invalid = inputs.filter((input) => !check(input));
+    if (invalid.length) {
+      invalid[0].focus();   // field-level messages are shown under each field
       return;
     }
+    if (form.elements._honey.value) return; // bot
 
-    // B) Fallback: open WhatsApp with the details pre-filled
-    const text =
-      `Hi Kishore, I'd like to book a call.\n\n` +
-      `Name: ${data.name}\nPhone: ${data.phone}\nRequirement: ${data.requirement}`;
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
-    setStatus('Opening WhatsApp with your details…');
-    form.reset();
+    const data = Object.fromEntries(inputs.map((i) => [i.name, i.value.trim()]));
+
+    button.disabled = true;
+    buttonText.textContent = 'Sending…';
+    try {
+      const res = await fetch(FORM_EMAIL_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          Name: data.name,
+          Phone: `${form.elements.code.value} ${data.phone}`,
+          Email: data.email,
+          Requirement: data.requirement,
+          _subject: `New call request from ${data.name}`,
+          _replyto: data.email,      // hitting "Reply" in the inbox answers the visitor
+          _template: 'table',
+        }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || String(json.success) !== 'true') throw new Error(json.message || res.statusText);
+
+      form.reset();
+      inputs.forEach((i) => i.closest('.field').classList.remove('is-invalid'));
+      setStatus('Thank you! Your request has been sent. I\'ll get back to you shortly.');
+    } catch (err) {
+      // Surface the two setup problems clearly; everything else gets a friendly fallback
+      const reason = String(err && err.message || '');
+      const wa = `<a href="https://wa.me/${WHATSAPP_NUMBER}" target="_blank" rel="noopener">message me on WhatsApp</a>`;
+      if (/activat/i.test(reason)) {
+        setStatus(`This form is being set up and can't receive messages yet. Please ${wa}.`, true);
+        console.warn('[FormSubmit] ' + reason);
+      } else if (location.protocol === 'file:' || /web server/i.test(reason)) {
+        setStatus('The form only works on the live website (not when index.html is opened from your computer).', true);
+      } else {
+        setStatus(`Sorry, your message couldn't be sent. Please try again or ${wa}.`, true);
+      }
+    } finally {
+      button.disabled = false;
+      buttonText.textContent = 'Submit';
+    }
   });
 
-  // Clear the error state as the user types
-  form.addEventListener('input', (e) => {
-    const field = e.target.closest('.field');
-    if (field) field.classList.remove('is-invalid');
+  // Phone: keep digits only, max 10 (also handles paste like "+91 99529-44283")
+  form.elements.phone.addEventListener('input', (e) => {
+    const digits = e.target.value.replace(/\D/g, '');
+    e.target.value = digits.length > 10 ? digits.slice(-10) : digits; // pasted with a country code → keep the last 10
+  });
+
+  // Re-check a field as soon as the visitor fixes it / leaves it after an error
+  inputs.forEach((input) => {
+    input.addEventListener('input', () => { if (input.closest('.field').classList.contains('is-invalid')) check(input); });
+    input.addEventListener('blur', () => { if (input.value.trim()) check(input); });
   });
 })();
