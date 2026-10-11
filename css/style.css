@@ -54,6 +54,7 @@
   --ring-line:   rgba(20,20,20,.05);
   --badge-bg:    #FFF8E1;
   --badge-ink:   #A57B0E;
+  --error:       #8C1D18;
 
   --radius-sm:   14px;
   --radius:      24px;
@@ -97,6 +98,7 @@
   --ring-line:   rgba(255,255,255,.05);
   --badge-bg:    rgba(245,200,58,.12);
   --badge-ink:   #F5C83A;
+  --error:       #FF8A80;
 
   --shadow-sm:   0 4px 14px rgba(0,0,0,.35);
   --shadow:      0 18px 40px -16px rgba(0,0,0,.6);
@@ -703,43 +705,45 @@ em { font-style: normal; color: var(--yellow); }
 .contact__icon svg { width: 18px; height: 18px; }
 .contact__list a:hover .contact__icon { background: var(--yellow-hi); color: var(--on-yellow); }
 
-/* Yellow form panel */
+/* Form panel — soft grey with white fields; the yellow is saved for the Submit button */
 .contact__form {
-  background: var(--yellow-hi);
-  background-image: radial-gradient(120% 80% at 100% 0%, #FFD966 0%, transparent 60%);
+  background: var(--bg);
+  background-image: radial-gradient(120% 80% at 100% 0%, rgba(245,200,58,.16) 0%, transparent 60%);
+  border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   padding: 38px 34px 32px;
-  color: var(--on-yellow);
+  color: var(--ink);
   display: flex; flex-direction: column; gap: 18px;
   position: relative; overflow: hidden;
 }
 .contact__form::after { /* decorative circle */
   content: ""; position: absolute; right: -60px; bottom: -60px;
   width: 180px; height: 180px; border-radius: 50%;
-  border: 30px solid rgba(255,255,255,.18);
+  border: 30px solid rgba(245,200,58,.14);
   pointer-events: none;
 }
-.form__title { font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; }
+/* Same style as the section titles: bold, tight, last word in yellow */
+.form__title { font-size: clamp(1.9rem, 3.2vw, 2.4rem); font-weight: 800; line-height: 1.08; letter-spacing: -.03em; text-align: center; position: relative; z-index: 1; }
 
 .field { display: flex; flex-direction: column; gap: 8px; position: relative; z-index: 1; }
-.field__label { font-size: .92rem; font-weight: 500; color: rgba(20,20,20,.75); }
-.field__label abbr { text-decoration: none; color: #8C1D18; font-weight: 700; }
-.field__error { min-height: 0; font-size: .85rem; font-weight: 600; color: #8C1D18; }
+.field__label { font-size: .92rem; font-weight: 500; color: var(--ink-2); }
+.field__label abbr { text-decoration: none; color: var(--error); font-weight: 700; }
+.field__error { min-height: 0; font-size: .85rem; font-weight: 600; color: var(--error); }
 .field__error:empty { display: none; }
 .field input, .field textarea, .field select {
   width: 100%;
-  font: inherit; font-size: 1rem; color: var(--on-yellow);
-  background: rgba(255,255,255,.38);
-  border: 1.5px solid transparent;
+  font: inherit; font-size: 1rem; color: var(--ink);
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
   border-radius: var(--radius-sm);
   padding: 15px 18px;
   resize: vertical;
   transition: background .3s, border-color .3s, box-shadow .3s;
   -webkit-appearance: none; appearance: none;
 }
-.field input::placeholder, .field textarea::placeholder { color: rgba(20,20,20,.45); }
-.field input:focus, .field textarea:focus, .field select:focus { outline: none; background: rgba(255,255,255,.75); border-color: var(--on-yellow); box-shadow: 0 0 0 4px rgba(20,20,20,.08); }
-.field.is-invalid input, .field.is-invalid textarea { border-color: #8C1D18; background: rgba(255,255,255,.7); }
+.field input::placeholder, .field textarea::placeholder { color: var(--muted); opacity: .8; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--yellow-hi); box-shadow: 0 0 0 4px var(--yellow-glow); }
+.field.is-invalid input, .field.is-invalid textarea { border-color: var(--error); }
 .field__row { display: grid; grid-template-columns: 112px 1fr; gap: 10px; }
 .field__code {
   cursor: pointer; padding-right: 34px !important;
@@ -747,24 +751,27 @@ em { font-style: normal; color: var(--yellow); }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23141414' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important; background-position: right 14px center !important;
 }
+[data-theme="dark"] .field__code { /* light arrow on dark field */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23F2F2EE' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") !important;
+}
 .form__honey { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 
 .form__submit {
   align-self: center; position: relative; z-index: 1;
   display: inline-flex; align-items: center; gap: 14px;
   padding: 8px 26px 8px 8px; margin-top: 6px;
-  background: #fff; border-radius: 999px;
+  background: var(--yellow-hi); color: var(--on-yellow); border-radius: 999px;
   font-weight: 600; font-size: 1rem;
-  box-shadow: 0 10px 24px -10px rgba(0,0,0,.3);
+  box-shadow: 0 10px 26px -8px var(--yellow-glow), inset 0 -2px 0 rgba(0,0,0,.08);
   transition: transform .3s var(--ease), box-shadow .3s;
 }
-.form__submit:hover { transform: translateY(-2px); box-shadow: 0 16px 30px -10px rgba(0,0,0,.35); }
+.form__submit:hover { transform: translateY(-2px); background: #FFD24A; box-shadow: 0 16px 34px -8px var(--yellow-glow), inset 0 -2px 0 rgba(0,0,0,.08); }
 .form__submit-icon { width: 40px; height: 40px; border-radius: 50%; background: var(--on-yellow); color: #fff; display: grid; place-items: center; transition: transform .4s var(--ease); }
 .form__submit-icon svg { width: 18px; height: 18px; }
 .form__submit:hover .form__submit-icon { transform: rotate(-30deg); }
 .form__submit[disabled] { opacity: .65; pointer-events: none; }
 .form__status { min-height: 1.3em; font-size: .95rem; font-weight: 600; text-align: center; position: relative; z-index: 1; }
-.form__status.is-error { color: #8C1D18; }
+.form__status.is-error { color: var(--error); }
 .form__status a { text-decoration: underline; }
 
 /* ---------- 9. Footer + WhatsApp FAB ---------- */
